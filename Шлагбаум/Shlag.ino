@@ -1,47 +1,102 @@
+#include <Arduino.h>
 #include <TheLibrary.h>
 #include <Servo.h>
 
 Servo Shlag;
-TDigitalInput Sensor(7);
-TDigitalOutput Red(9);
-TDigitalOutput Green(11);
+
+TDigitalInput ButtonRed(4);
+TDigitalInput ButtonWhite(5);
+TDigitalInput ButtonBlue(6);
+TDigitalInput ButtonBlack(7);
+
+TDigitalOutput Red(8);
+TDigitalOutput Green(9);
+TDigitalOutput Led(13);
+
+int State;
 
 void setup()
 {
-  Shlag.attach(8);
+    Led.Off();
+    Shlag.attach(3);
+    Close();
+}
+
+void Close()
+{
+    Red.On();
+    Rotate(95);
+    State = 0;    
+}
+
+void Open()
+{
+    Green.On();
+    Rotate(200);
+}
+
+bool Change(int from, int to)
+{
+    bool res = State == from;
+
+    if (res)
+    {
+        Led.On();
+        delay(100);
+        Led.Off();
+
+        State = to;
+    }
+
+    return res;
 }
 
 void loop()
 {
-  if (Sensor.Get())
-  {
-    Red.Off();
-    Green.On();
-    SetS(90);
-    delay(5000);
+    delay(300);
 
-    Red.On();
-  };
+    if (State == 4)
+    {
+        Red.Off();
+        Green.Invert();
+    }
+    else
+    {
+        Green.Off();
+        Red.Invert();
+    }
 
-  SetS(0);
-  Red.Invert();
-  Green.Off();
+    if (!ButtonRed.Get())
+    {
+        Change(0, 1);
+     
+        if (Change(4, 0))
+            Close();
+    }
 
-  delay(1000);
+    if (!ButtonBlue.Get())
+        Change(1, 2);
+
+    if (!ButtonWhite.Get())
+        Change(2, 3);
+
+    if (!ButtonBlack.Get())
+        if (Change(3, 4))           
+            Open();
 };
 
-void SetS(int AValue)
+void Rotate(int AValue)
 {
-  int i = Shlag.read();
-  int Offset = -1;
+    int i = Shlag.read();
+    int Offset = -1;
 
-  if (i < AValue)
-    Offset = 1;
+    if (i < AValue)
+        Offset = 1;
 
-  for (; i != AValue; i += Offset)
-  {
-    delay(25);
+    for (; i != AValue; i += Offset)
+    {
+        delay(50);
 
-    Shlag.write(i);
-  }
+        Shlag.write(i);
+    }
 }
